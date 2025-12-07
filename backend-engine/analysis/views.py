@@ -2,6 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.models import User
 
 
 class RegisterView(APIView):
@@ -15,3 +18,25 @@ class RegisterView(APIView):
             )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyEmailView(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+        except:
+            return Response(
+                {"error": "Invalid verification link"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            return Response(
+                {"message": "Email verified successfully"},
+                status=status.HTTP_200_OK
+            )
+        return Response(
+            {"error": "Invalid or expired token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
