@@ -6,6 +6,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 import re
+from .models import Game
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -52,3 +53,17 @@ class RegisterSerializer(serializers.ModelSerializer):
             recipient_list=[user.email],
         )
         return user
+
+class GameUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = ["pgn"]
+
+    def validate_pgn(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("PGN cannot be empty.")
+
+        if "[" not in value or "]" not in value:
+            raise serializers.ValidationError("Invalid PGN format.")
+
+        return value

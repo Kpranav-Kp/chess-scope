@@ -5,6 +5,8 @@ from .serializers import RegisterSerializer
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
+from rest_framework.permissions import IsAuthenticated
+from .serializers import GameUploadSerializer
 
 
 class RegisterView(APIView):
@@ -40,3 +42,23 @@ class VerifyEmailView(APIView):
             {"error": "Invalid or expired token"},
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+class GameUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = GameUploadSerializer(data=request.data)
+
+        if serializer.is_valid():
+            game = serializer.save(user=request.user)
+
+            return Response(
+                {
+                    "message": "Game uploaded successfully",
+                    "game_id": game.id,
+                    "analyzed": game.analyzed
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
