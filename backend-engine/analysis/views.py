@@ -7,6 +7,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from .serializers import GameUploadSerializer
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.encoding import DjangoUnicodeDecodeError
 
 
 class RegisterView(APIView):
@@ -16,33 +18,33 @@ class RegisterView(APIView):
             serializer.save()
             return Response(
                 {"message": "User registered successfully"},
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class VerifyEmailView(APIView):
     def get(self, request, uidb64, token):
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
             user = User.objects.get(pk=uid)
-        except:
+        except (ObjectDoesNotExist, DjangoUnicodeDecodeError):
             return Response(
                 {"error": "Invalid verification link"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
             return Response(
-                {"message": "Email verified successfully"},
-                status=status.HTTP_200_OK
+                {"message": "Email verified successfully"}, status=status.HTTP_200_OK
             )
         return Response(
-            {"error": "Invalid or expired token"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST
         )
-    
+
+
 class GameUploadView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -56,9 +58,9 @@ class GameUploadView(APIView):
                 {
                     "message": "Game uploaded successfully",
                     "game_id": game.id,
-                    "analyzed": game.analyzed
+                    "analyzed": game.analyzed,
                 },
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

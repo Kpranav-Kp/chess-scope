@@ -1,5 +1,6 @@
 import chess.pgn
 
+
 def fen_from_pgn(pgn_io):
     game = chess.pgn.read_game(pgn_io)
     board = game.board()
@@ -11,7 +12,7 @@ def fen_from_pgn(pgn_io):
             "ply": board.ply(),
             "player": "White" if board.turn else "Black",
             "san": board.san(move),
-            "fen_before": fen
+            "fen_before": fen,
         }
         board.push(move)
         each_move["fen_after"] = board.fen()

@@ -32,7 +32,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
         return value
 
-
     def create(self, validated_data):
         user = User.objects.create_user(
             username=validated_data["username"],
@@ -53,6 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             recipient_list=[user.email],
         )
         return user
+
 
 class GameUploadSerializer(serializers.ModelSerializer):
     class Meta:

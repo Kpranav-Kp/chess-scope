@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,17 +14,38 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Game',
+            name="Game",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('pgn', models.TextField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('analyzed', models.BooleanField(default=False)),
-                ('result', models.CharField(blank=True, max_length=10, null=True)),
-                ('white_player', models.CharField(blank=True, max_length=100, null=True)),
-                ('black_player', models.CharField(blank=True, max_length=100, null=True)),
-                ('event', models.CharField(blank=True, max_length=200, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='games', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("pgn", models.TextField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("analyzed", models.BooleanField(default=False)),
+                ("result", models.CharField(blank=True, max_length=10, null=True)),
+                (
+                    "white_player",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "black_player",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                ("event", models.CharField(blank=True, max_length=200, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="games",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

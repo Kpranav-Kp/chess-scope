@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Game(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="games")
 
     pgn = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -17,10 +17,11 @@ class Game(models.Model):
     def __str__(self):
         return f"Game {self.id} ({self.user.username})"
 
+
 class Move(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='moves')
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="moves")
     move_number = models.IntegerField()
-    san = models.CharField(max_length=20)  
+    san = models.CharField(max_length=20)
     evaluation = models.FloatField(null=True)
     best_move = models.CharField(max_length=20, null=True)
     centipawn_loss = models.FloatField(null=True)
