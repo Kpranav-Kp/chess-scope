@@ -16,3 +16,12 @@ class Game(models.Model):
 
     def __str__(self):
         return f"Game {self.id} ({self.user.username})"
+
+class Move(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='moves')
+    move_number = models.IntegerField()
+    san = models.CharField(max_length=20)  
+    evaluation = models.FloatField(null=True)
+    best_move = models.CharField(max_length=20, null=True)
+    centipawn_loss = models.FloatField(null=True)
+    classification = models.CharField(max_length=20, null=True)
