@@ -126,6 +126,8 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/1"
 CELERY_TIMEZONE = "Asia/Kolkata"
 
+STOCKFISH_PATH = os.getenv("STOCKFISH_PATH")
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
