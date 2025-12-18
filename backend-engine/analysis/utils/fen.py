@@ -1,7 +1,9 @@
 import chess.pgn
+from io import StringIO
 
 
-def fen_from_pgn(pgn_io):
+def fen_from_pgn(pgn: str):
+    pgn_io = StringIO(pgn)
     game = chess.pgn.read_game(pgn_io)
     board = game.board()
     board_state = []
@@ -11,7 +13,7 @@ def fen_from_pgn(pgn_io):
             "move_number": board.fullmove_number,
             "ply": board.ply(),
             "player": "White" if board.turn else "Black",
-            "san": board.san(move),
+            "uci": move.uci(),
             "fen_before": fen,
         }
         board.push(move)

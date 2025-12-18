@@ -5,10 +5,10 @@ from .serializers import RegisterSerializer
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
-from rest_framework.permissions import IsAuthenticated
 from .serializers import GameUploadSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import DjangoUnicodeDecodeError
+from analysis.tasks import analyze_game
 
 
 class RegisterView(APIView):
@@ -46,13 +46,13 @@ class VerifyEmailView(APIView):
 
 
 class GameUploadView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
         serializer = GameUploadSerializer(data=request.data)
 
         if serializer.is_valid():
             game = serializer.save(user=request.user)
+
+            analyze_game.delay(game.id)
 
             return Response(
                 {
