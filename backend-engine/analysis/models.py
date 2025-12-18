@@ -20,8 +20,12 @@ class Game(models.Model):
 
 class Move(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="moves")
+    ply = models.IntegerField()
     move_number = models.IntegerField()
-    san = models.CharField(max_length=20)
+    player = models.CharField(max_length=6)
+    uci = models.CharField(max_length=10)
+    fen_before = models.CharField(max_length=150)
+    fen_after = models.CharField(max_length=150)
     evaluation = models.FloatField(null=True)
     best_move = models.CharField(max_length=20, null=True)
     centipawn_loss = models.FloatField(null=True)
