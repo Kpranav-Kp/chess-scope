@@ -1,8 +1,11 @@
 from celery import shared_task
-from .models import Game
+from .models import Game, Move
 from .utils.fen import fen_from_pgn
 from .utils.stockfish import get_stockfish
 import logging
+from .utils.classification import classify_move
+from .utils.evaluation import calculate_centipawn_loss, normalize_evaluation
+from .utils.meta import accuracy
 
 
 logger = logging.getLogger(__name__)
@@ -14,17 +17,41 @@ def analyze_game(self, game_id):
 
     engine = get_stockfish()
     moves = fen_from_pgn(game.pgn)
+    move_objects = []
 
     for move in moves:
         engine.set_fen_position(move["fen_before"])
-        evaluation = engine.get_evaluation()
-        best_move = engine.get_best_move()
 
-        logger.info(
-            f"Game {game_id} | "
-            f"Move {move['move_number']} {move['player']} {move['uci']} | "
-            f"Eval {evaluation} | Best {best_move}"
+        best_move = engine.get_best_move()
+        engine.make_moves_from_current_position([best_move])
+        best_eval = normalize_evaluation(engine.get_evaluation())
+
+        engine.set_fen_position(move["fen_before"])
+
+        engine.make_moves_from_current_position([move["uci"]])
+        played_eval = normalize_evaluation(engine.get_evaluation())
+
+        cp_loss = calculate_centipawn_loss(best_eval, played_eval)
+        classification = classify_move(cp_loss)
+
+        move_objects.append(
+            Move(
+                game=game,
+                ply=move["ply"],
+                move_number=move["move_number"],
+                player=move["player"],
+                uci=move["uci"],
+                fen_before=move["fen_before"],
+                fen_after=move["fen_after"],
+                evaluation=played_eval,
+                best_move=best_move,
+                centipawn_loss=cp_loss,
+                classification=classification,
+            )
         )
+    Move.objects.bulk_create(move_objects)
+
+    game.accuracy = accuracy(moves)
 
     game.analyzed = True
     game.save()

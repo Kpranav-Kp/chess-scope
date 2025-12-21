@@ -7,6 +7,7 @@ from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 import re
 from .models import Game
+from .utils.meta import extract_pgn_metadata
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -67,3 +68,20 @@ class GameUploadSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid PGN format.")
 
         return value
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        pgn = validated_data["pgn"]
+
+        metadata = extract_pgn_metadata(pgn)
+
+        game = Game.objects.create(
+            user=request.user,
+            pgn=pgn,
+            event=metadata.get("event"),
+            white_player=metadata.get("white_player"),
+            black_player=metadata.get("black_player"),
+            result=metadata.get("result"),
+        )
+
+        return game

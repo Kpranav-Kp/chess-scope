@@ -8,6 +8,7 @@ class Game(models.Model):
     pgn = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     analyzed = models.BooleanField(default=False)
+    accuracy = models.FloatField(null=True)
 
     result = models.CharField(max_length=10, blank=True, null=True)
     white_player = models.CharField(max_length=100, blank=True, null=True)

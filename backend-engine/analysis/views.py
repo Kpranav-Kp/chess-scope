@@ -47,20 +47,20 @@ class VerifyEmailView(APIView):
 
 class GameUploadView(APIView):
     def post(self, request):
-        serializer = GameUploadSerializer(data=request.data)
+        serializer = GameUploadSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
-            game = serializer.save(user=request.user)
+        game = serializer.save()
+        analyze_game.delay(game.id)
 
-            analyze_game.delay(game.id)
-
-            return Response(
-                {
-                    "message": "Game uploaded successfully",
-                    "game_id": game.id,
-                    "analyzed": game.analyzed,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "message": "Game uploaded successfully",
+                "game_id": game.id,
+                "analyzed": game.analyzed,
+            },
+            status=status.HTTP_201_CREATED,
+        )
