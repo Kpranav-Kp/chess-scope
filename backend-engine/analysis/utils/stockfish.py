@@ -6,9 +6,9 @@ def get_stockfish():
     engine = Stockfish(
         path=settings.STOCKFISH_PATH,
         parameters={
-            "Threads": 4,
-            "Minimum Thinking Time": 30,
-            "Hash": 256,
+            "Threads": 1,
+            "MultiPV": 2,
+            "Hash": 128,
         },
     )
 

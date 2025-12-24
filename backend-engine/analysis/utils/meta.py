@@ -1,11 +1,13 @@
 from io import StringIO
 import chess.pgn
+from django.db.models import Sum
 
 
-def accuracy(moves):
-    total_loss = sum(m.centipawn_loss for m in moves)
-    max_loss = len(moves) * 300
-    return 100 * (1 - total_loss / max_loss)
+def accuracy(qs):
+    total_loss = qs.aggregate(total=Sum("centipawn_loss"))["total"] or 0
+
+    max_loss = qs.count() * 300
+    return round(100 * (1 - total_loss / max_loss), 2)
 
 
 def extract_pgn_metadata(pgn: str) -> dict:

@@ -15,6 +15,19 @@ class Game(models.Model):
     black_player = models.CharField(max_length=100, blank=True, null=True)
     event = models.CharField(max_length=200, blank=True, null=True)
 
+    num_best = models.IntegerField(default=0)
+    num_excellent = models.IntegerField(default=0)
+    num_good = models.IntegerField(default=0)
+    num_inaccuracy = models.IntegerField(default=0)
+    num_mistake = models.IntegerField(default=0)
+    num_blunder = models.IntegerField(default=0)
+    num_brilliant = models.IntegerField(default=0)
+    num_great = models.IntegerField(default=0)
+
+    avg_cp_loss = models.FloatField(null=True)
+    max_advantage = models.IntegerField(null=True)
+    min_advantage = models.IntegerField(null=True)
+
     def __str__(self):
         return f"Game {self.id} ({self.user.username})"
 

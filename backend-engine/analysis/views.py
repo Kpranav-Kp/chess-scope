@@ -8,7 +8,8 @@ from django.contrib.auth.models import User
 from .serializers import GameUploadSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import DjangoUnicodeDecodeError
-from analysis.tasks import analyze_game
+from analysis.tasks import analyze_game, aggregate_game_stats
+from celery import chain
 
 
 class RegisterView(APIView):
@@ -54,7 +55,10 @@ class GameUploadView(APIView):
         serializer.is_valid(raise_exception=True)
 
         game = serializer.save()
-        analyze_game.delay(game.id)
+        chain(
+            analyze_game.s(game.id),
+            aggregate_game_stats.s(),
+        ).delay()
 
         return Response(
             {
