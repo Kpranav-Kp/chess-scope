@@ -1,8 +1,7 @@
-from celery import shared_task
-from django.db import transaction
 import logging
 import chess
-
+from celery import shared_task
+from django.db import transaction
 from .models import Game, Move
 from .utils.fen import fen_from_pgn
 from .utils.stockfish import get_stockfish
@@ -13,8 +12,9 @@ from .utils.evaluation import (
     normalize_evaluation,
     normalize_top_move,
 )
-from .utils.meta import move_accuracy, player_accuracy
+from .utils.accuracy import move_accuracy, player_accuracy
 from .utils.aggregates import aggregate_moves
+from analysis.utils.complexity import position_complexity, select_engine_depth
 
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,7 @@ def analyze_game(self, game_id):
         prev_board = board_after
 
         engine.set_fen_position(fen_before)
+
         top_moves = engine.get_top_moves(2)
         if not top_moves:
             continue
@@ -66,7 +67,23 @@ def analyze_game(self, game_id):
             second_eval is None or (best_eval - second_eval) >= ONLY_MOVE_THRESHOLD
         )
 
-        eval_before = normalize_evaluation(engine.get_evaluation())
+        eval_before = best_eval
+        material_before = material_balance(board_before)
+        material_after = material_balance(board_after)
+        material_delta = material_after - material_before
+
+        num_legal_moves = board_before.legal_moves.count()
+        phase = game_phase(move["ply"])
+
+        complexity = position_complexity(
+            num_legal_moves=num_legal_moves,
+            material_delta=material_delta,
+            eval_before=eval_before,
+            only_move=only_move,
+        )
+
+        depth = select_engine_depth(phase, complexity)
+        engine.set_depth(depth)
 
         try:
             engine.make_moves_from_current_position([move["uci"]])
@@ -75,24 +92,40 @@ def analyze_game(self, game_id):
             continue
 
         eval_after = normalize_evaluation(engine.get_evaluation())
-
-        material_before = material_balance(board_before)
-        material_after = material_balance(board_after)
-        num_legal_moves = board_before.legal_moves.count()
-
         cp_loss = calculate_centipawn_loss(best_eval, eval_after)
 
         context = MoveContext(
-            material_delta=material_after - material_before,
+            material_delta=material_delta,
             eval_before=eval_before,
             eval_after=eval_after,
             only_move=only_move,
-            phase=game_phase(move["ply"]),
+            phase=phase,
             num_legal_moves=num_legal_moves,
         )
 
         classification = classify_move(cp_loss, context)
         accuracy_score = move_accuracy(cp_loss)
+
+        neg_game_changing = (
+            classification in {"blunder", "mistake"}
+            and (eval_before - eval_after) >= 1.5
+        )
+
+        best_move_fen = None
+        if neg_game_changing:
+            best_board = chess.Board(fen_before)
+            try:
+                best_board.push_uci(best_move)
+                best_move_fen = best_board.fen()
+            except ValueError as e:
+                logger.warning(
+                    "Failed to apply best move %s on FEN %s (game=%s, ply=%s): %s",
+                    best_move,
+                    fen_before,
+                    game.id,
+                    move["ply"],
+                    str(e),
+                )
 
         move_objects.append(
             Move(
@@ -105,9 +138,11 @@ def analyze_game(self, game_id):
                 fen_after=fen_after,
                 evaluation=eval_after,
                 best_move=best_move,
+                best_move_fen=best_move_fen,
                 centipawn_loss=cp_loss,
                 classification=classification,
                 accuracy_score=accuracy_score,
+                neg_game_changing=neg_game_changing,
             )
         )
 

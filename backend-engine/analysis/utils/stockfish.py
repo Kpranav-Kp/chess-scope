@@ -6,9 +6,9 @@ def get_stockfish():
     engine = Stockfish(
         path=settings.STOCKFISH_PATH,
         parameters={
-            "Threads": 1,
+            "Threads": 2,
             "MultiPV": 2,
-            "Hash": 128,
+            "Hash": 256,
         },
     )
 
@@ -16,7 +16,5 @@ def get_stockfish():
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     ):
         raise RuntimeError("Stockfish engine failed to initialize")
-
-    engine.set_depth(18)
 
     return engine

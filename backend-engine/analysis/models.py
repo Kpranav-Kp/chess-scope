@@ -52,6 +52,8 @@ class Move(models.Model):
     fen_after = models.CharField(max_length=150)
     evaluation = models.FloatField(null=True)
     best_move = models.CharField(max_length=20, null=True)
+    best_move_fen = models.CharField(max_length=150, null=True)
+    neg_game_changing = models.BooleanField(default=False)
     centipawn_loss = models.FloatField(null=True)
     classification = models.CharField(max_length=20, null=True)
     accuracy_score = models.FloatField(null=True)
