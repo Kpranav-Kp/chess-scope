@@ -1,53 +1,34 @@
-def classify_move(cp_loss: float, context) -> str:
-    eval_gain = context.eval_after - context.eval_before
+def classify_move(cp_loss, ctx):
+    eval_gain = ctx.eval_after - ctx.eval_before
 
-    if context.phase == "opening":
-        if cp_loss <= 15:
-            return "good"
-        elif cp_loss <= 40:
-            return "inaccuracy"
-        else:
-            return "mistake"
+    if cp_loss <= 15:
+        base = "best"
+    elif cp_loss <= 30:
+        base = "excellent"
+    elif cp_loss <= 60:
+        base = "good"
+    elif cp_loss <= 120:
+        base = "inaccuracy"
+    elif cp_loss <= 300:
+        base = "mistake"
+    else:
+        base = "blunder"
 
-    if context.only_move or context.num_legal_moves <= 2:
-        if cp_loss <= 20:
-            return "best"
-        elif cp_loss <= 80:
-            return "inaccuracy"
-        else:
-            return "mistake"
+    if ctx.phase == "opening":
+        if base == "excellent":
+            base = "best"
+        elif base == "mistake":
+            base = "inaccuracy"
 
-    if abs(eval_gain) < 15:
-        if cp_loss <= 20:
-            return "good"
-        elif cp_loss <= 60:
-            return "inaccuracy"
-        else:
-            return "mistake"
-
-    is_sound_sacrifice = (
-        context.material_delta < 0
+    if (
+        base in ("best", "excellent")
+        and ctx.material_delta < 0
         and eval_gain > 150
-        and cp_loss < 15
-        and context.phase in ("middlegame", "endgame")
-    )
-
-    if is_sound_sacrifice and context.only_move:
+        and ctx.phase in ("middlegame", "endgame")
+    ):
         return "brilliant"
 
-    if eval_gain > 120 and context.only_move and cp_loss < 20:
+    if base == "best" and eval_gain > 120:
         return "great"
 
-    if cp_loss <= 10:
-        return "best"
-    elif cp_loss <= 20:
-        return "excellent"
-    elif cp_loss <= 40:
-        return "good"
-
-    if cp_loss <= 80:
-        return "inaccuracy"
-    elif cp_loss <= 200:
-        return "mistake"
-    else:
-        return "blunder"
+    return base

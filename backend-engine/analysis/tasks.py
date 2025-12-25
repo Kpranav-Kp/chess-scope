@@ -1,30 +1,39 @@
 from celery import shared_task
 from django.db import transaction
+import logging
+import chess
+
 from .models import Game, Move
 from .utils.fen import fen_from_pgn
 from .utils.stockfish import get_stockfish
+from .utils.context import MoveContext, material_balance, game_phase
 from .utils.classification import classify_move
 from .utils.evaluation import (
     calculate_centipawn_loss,
     normalize_evaluation,
     normalize_top_move,
 )
-from .utils.context import (
-    MoveContext,
-    material_balance,
-    game_phase,
-)
-from .utils.aggregates import aggregate_game
-from .utils.meta import accuracy
-import chess
-import logging
+from .utils.meta import move_accuracy, player_accuracy
+from .utils.aggregates import aggregate_moves
+
 
 logger = logging.getLogger(__name__)
+ONLY_MOVE_THRESHOLD = 100
 
 
-@shared_task(bind=True)
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=10,
+    retry_kwargs={"max_retries": 3},
+)
 def analyze_game(self, game_id):
-    game = Game.objects.get(id=game_id)
+    try:
+        game = Game.objects.get(id=game_id)
+    except Game.DoesNotExist:
+        logger.warning("Game %s does not exist", game_id)
+        return None
+
     if game.analyzed:
         return game.id
 
@@ -38,8 +47,14 @@ def analyze_game(self, game_id):
         fen_before = move["fen_before"]
         fen_after = move["fen_after"]
 
+        board_before = prev_board or chess.Board(fen_before)
+        board_after = chess.Board(fen_after)
+        prev_board = board_after
+
         engine.set_fen_position(fen_before)
         top_moves = engine.get_top_moves(2)
+        if not top_moves:
+            continue
 
         best_entry = top_moves[0]
         best_move = best_entry["Move"]
@@ -47,25 +62,23 @@ def analyze_game(self, game_id):
 
         second_eval = normalize_top_move(top_moves[1]) if len(top_moves) > 1 else None
 
-        only_move = second_eval is None or (best_eval - second_eval) >= 100
+        only_move = (
+            second_eval is None or (best_eval - second_eval) >= ONLY_MOVE_THRESHOLD
+        )
 
         eval_before = normalize_evaluation(engine.get_evaluation())
 
-        engine.set_fen_position(fen_before)
-        engine.make_moves_from_current_position([move["uci"]])
+        try:
+            engine.make_moves_from_current_position([move["uci"]])
+        except ValueError:
+            logger.warning("Illegal move %s in game %s", move["uci"], game.id)
+            continue
+
         eval_after = normalize_evaluation(engine.get_evaluation())
 
-        if prev_board is None:
-            board_before = chess.Board(fen_before)
-        else:
-            board_before = prev_board
-
-        num_legal_moves = board_before.legal_moves.count()
         material_before = material_balance(board_before)
-
-        board_after = chess.Board(fen_after)
         material_after = material_balance(board_after)
-        prev_board = board_after
+        num_legal_moves = board_before.legal_moves.count()
 
         cp_loss = calculate_centipawn_loss(best_eval, eval_after)
 
@@ -79,6 +92,7 @@ def analyze_game(self, game_id):
         )
 
         classification = classify_move(cp_loss, context)
+        accuracy_score = move_accuracy(cp_loss)
 
         move_objects.append(
             Move(
@@ -93,14 +107,14 @@ def analyze_game(self, game_id):
                 best_move=best_move,
                 centipawn_loss=cp_loss,
                 classification=classification,
+                accuracy_score=accuracy_score,
             )
         )
 
     with transaction.atomic():
         Move.objects.bulk_create(move_objects)
-        game.accuracy = accuracy(Move.objects.filter(game=game))
         game.analyzed = True
-        game.save()
+        game.save(update_fields=["analyzed"])
 
     return game.id
 
@@ -109,25 +123,31 @@ def analyze_game(self, game_id):
 def aggregate_game_stats(game_id):
     game = Game.objects.get(id=game_id)
 
-    stats, counts = aggregate_game(game)
+    all_moves = Move.objects.filter(game=game)
+    white_moves = all_moves.filter(player="White")
+    black_moves = all_moves.filter(player="Black")
 
-    game.avg_cp_loss = stats["avg_cp_loss"]
-    game.max_advantage = stats["max_advantage"]
-    game.min_advantage = stats["min_advantage"]
+    global_stats, _ = aggregate_moves(all_moves)
+    _, white_counts = aggregate_moves(white_moves)
+    _, black_counts = aggregate_moves(black_moves)
 
-    game.num_best = counts.get("best", 0)
-    game.num_good = counts.get("good", 0)
-    game.num_excellent = counts.get("excellent", 0)
-    game.num_inaccuracy = counts.get("inaccuracy", 0)
-    game.num_mistake = counts.get("mistake", 0)
-    game.num_blunder = counts.get("blunder", 0)
-    game.num_great = counts.get("great", 0)
-    game.num_brilliant = counts.get("brilliant", 0)
+    game.avg_cp_loss = global_stats["avg_cp_loss"]
+    game.max_advantage = global_stats["max_advantage"]
+    game.min_advantage = global_stats["min_advantage"]
+
+    game.white_accuracy = player_accuracy(white_moves)
+    game.black_accuracy = player_accuracy(black_moves)
+
+    for k, v in white_counts.items():
+        setattr(game, f"white_num_{k}", v)
+
+    for k, v in black_counts.items():
+        setattr(game, f"black_num_{k}", v)
 
     game.save()
 
     return {
         "game_id": game.id,
-        "moves": Move.objects.filter(game=game).count(),
+        "moves": all_moves.count(),
         "status": "aggregated",
     }

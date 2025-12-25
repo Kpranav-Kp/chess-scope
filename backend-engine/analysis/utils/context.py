@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import chess
 
 
-@dataclass
+@dataclass(frozen=True)
 class MoveContext:
     material_delta: int
     eval_before: float
@@ -32,6 +32,6 @@ def material_balance(board: chess.Board) -> int:
 def game_phase(ply: int) -> str:
     if ply < 20:
         return "opening"
-    elif ply < 60:
+    if ply < 60:
         return "middlegame"
     return "endgame"
