@@ -1,5 +1,11 @@
 from django.urls import path
-from .views import RegisterView, VerifyEmailView, GameUploadView
+from .views import (
+    RegisterView,
+    VerifyEmailView,
+    GameUploadView,
+    GameAnalysisView,
+    GameSummaryView,
+)
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
@@ -12,4 +18,14 @@ urlpatterns = [
         name="verify_email",
     ),
     path("upload/", GameUploadView.as_view(), name="upload_game"),
+    path(
+        "<int:game_id>/summary/",
+        GameSummaryView.as_view(),
+        name="game_summary",
+    ),
+    path(
+        "<int:game_id>/analysis/",
+        GameAnalysisView.as_view(),
+        name="game_analysis",
+    ),
 ]

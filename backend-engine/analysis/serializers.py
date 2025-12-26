@@ -6,7 +6,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 import re
-from .models import Game
+from .models import Game, Move
 from .utils.meta import extract_pgn_metadata
 
 
@@ -85,3 +85,120 @@ class GameUploadSerializer(serializers.ModelSerializer):
         )
 
         return game
+
+
+class MoveAnalysisSerializer(serializers.ModelSerializer):
+    show_best_move = serializers.SerializerMethodField()
+    explanation_available = serializers.SerializerMethodField()
+    explanation_type = serializers.SerializerMethodField()
+    is_key_moment = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Move
+        fields = [
+            "id",
+            "ply",
+            "move_number",
+            "player",
+            "uci",
+            "fen_before",
+            "fen_after",
+            "evaluation",
+            "best_move",
+            "best_move_fen",
+            "neg_game_changing",
+            "classification",
+            "show_best_move",
+            "explanation_available",
+            "explanation_type",
+            "is_key_moment",
+        ]
+
+    def get_show_best_move(self, obj):
+        if not obj.best_move_fen:
+            return False
+        return obj.classification not in {"best", "great", "brilliant"}
+
+    def get_explanation_available(self, obj):
+        return obj.neg_game_changing
+
+    def get_explanation_type(self, obj):
+        if not obj.neg_game_changing:
+            return None
+        return obj.classification
+
+    def get_is_key_moment(self, obj):
+        return obj.neg_game_changing
+
+
+class GameSummarySerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+    white_counts = serializers.SerializerMethodField()
+    black_counts = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "status",
+            "white_player",
+            "black_player",
+            "result",
+            "white_accuracy",
+            "black_accuracy",
+            "white_counts",
+            "black_counts",
+        ]
+
+    def get_status(self, obj):
+        return "ready" if obj.analyzed else "processing"
+
+    def get_white_counts(self, obj):
+        if not obj.analyzed:
+            return None
+
+        return {
+            "best": obj.white_num_best,
+            "excellent": obj.white_num_excellent,
+            "good": obj.white_num_good,
+            "inaccuracy": obj.white_num_inaccuracy,
+            "mistake": obj.white_num_mistake,
+            "blunder": obj.white_num_blunder,
+            "brilliant": obj.white_num_brilliant,
+            "great": obj.white_num_great,
+        }
+
+    def get_black_counts(self, obj):
+        if not obj.analyzed:
+            return None
+
+        return {
+            "best": obj.black_num_best,
+            "excellent": obj.black_num_excellent,
+            "good": obj.black_num_good,
+            "inaccuracy": obj.black_num_inaccuracy,
+            "mistake": obj.black_num_mistake,
+            "blunder": obj.black_num_blunder,
+            "brilliant": obj.black_num_brilliant,
+            "great": obj.black_num_great,
+        }
+
+
+class GameAnalysisSerializer(serializers.ModelSerializer):
+    moves = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "white_player",
+            "black_player",
+            "result",
+            "white_accuracy",
+            "black_accuracy",
+            "moves",
+        ]
+
+    def get_moves(self, obj):
+        qs = obj.moves.all().order_by("ply")
+        return MoveAnalysisSerializer(qs, many=True).data

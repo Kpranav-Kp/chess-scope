@@ -1,14 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
-from .serializers import GameUploadSerializer
+from .serializers import (
+    GameUploadSerializer,
+    RegisterSerializer,
+    GameSummarySerializer,
+    GameAnalysisSerializer,
+)
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import DjangoUnicodeDecodeError
 from analysis.tasks import analyze_game, aggregate_game_stats
+from analysis.models import Game
 from celery import chain
 
 
@@ -68,3 +73,37 @@ class GameUploadView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class GameSummaryView(APIView):
+    def get(self, request, game_id):
+        try:
+            game = Game.objects.get(id=game_id, user=request.user)
+        except Game.DoesNotExist:
+            return Response(
+                {"error": "Game not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = GameSummarySerializer(game)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GameAnalysisView(APIView):
+    def get(self, request, game_id):
+        try:
+            game = Game.objects.get(id=game_id, user=request.user)
+        except Game.DoesNotExist:
+            return Response(
+                {"error": "Game not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not game.analyzed:
+            return Response(
+                {"status": "processing"},
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        serializer = GameAnalysisSerializer(game)
+        return Response(serializer.data, status=status.HTTP_200_OK)
