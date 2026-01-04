@@ -1,0 +1,16 @@
+.analysis-container {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 64px 32px 32px; 
+  min-height: 100vh;
+}
+
+
+.right-panel {
+  width: 360px;              
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

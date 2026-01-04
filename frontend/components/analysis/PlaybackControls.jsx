@@ -1,8 +1,23 @@
-export default function PlaybackControls({ currentIndex, maxIndex, onChange }) {
+import Panel from "../ui/Panel";
+import Button from "../ui/Button";
+
+export default function PlaybackControls({
+  currentIndex,
+  maxIndex,
+  onChange,
+}) {
   return (
-    <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
-      <button onClick={() => onChange(Math.max(0, currentIndex - 1))}>◀ Prev</button>
-      <button onClick={() => onChange(Math.min(maxIndex, currentIndex + 1))}>Next ▶</button>
-    </div>
+    <Panel>
+      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+        <Button onClick={() => onChange(0)}>⏮</Button>
+        <Button onClick={() => onChange(Math.max(0, currentIndex - 1))}>
+          ◀
+        </Button>
+        <Button onClick={() => onChange(Math.min(maxIndex, currentIndex + 1))}>
+          ▶
+        </Button>
+        <Button onClick={() => onChange(maxIndex)}>⏭</Button>
+      </div>
+    </Panel>
   );
 }

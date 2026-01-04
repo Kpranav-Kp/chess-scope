@@ -1,0 +1,20 @@
+.move-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.move-list li {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.move-list li:hover {
+  background: #eee;
+}
+
+.move-list li.active {
+  background: #ddd;
+  font-weight: bold;
+}

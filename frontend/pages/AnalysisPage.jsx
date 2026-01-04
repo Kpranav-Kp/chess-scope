@@ -3,43 +3,39 @@ import ChessboardView from "../components/board/ChessboardView";
 import MoveList from "../components/analysis/MoveList";
 import PlaybackControls from "../components/analysis/PlaybackControls";
 import ExplanationPanel from "../components/analysis/ExplanationPanel";
+import EvalBar from "../components/analysis/EvalBar";
+import "./AnalysisPage.css";
 
-const MOCK_ANALYSIS = {
-  moves: [
-    {
-      index: 0,
-      san: "e4",
-      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
-      classification: "best",
-      explanation: null,
-    },
-    {
-      index: 1,
-      san: "e5",
-      fen: "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
-      classification: "good",
-      explanation: "Black mirrors White’s central control.",
-    },
-  ],
-};
+const MOVES = [
+  {
+    white: "e4",
+    black: "e5",
+    fen: "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+    explanation: "Both sides fight for the center.",
+    eval: 0.2,
+  },
+  {
+    white: "Nf3",
+    black: "Nc6",
+    fen: "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+    explanation: "Development with tempo.",
+    eval: 0.4,
+  },
+];
 
 export default function AnalysisPage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const moves = MOCK_ANALYSIS.moves;
-
-  const currentMove = moves[currentIndex];
+  const [index, setIndex] = useState(0);
+  const move = MOVES[index];
 
   return (
-    <div style={{ display: "flex", gap: "24px", padding: "24px" }}>
-      <ChessboardView fen={currentMove.fen} />
-      <div style={{ width: "320px" }}>
-        <ExplanationPanel move={currentMove} />
-        <MoveList moves={moves} currentIndex={currentIndex} onSelect={setCurrentIndex} />
-        <PlaybackControls
-          currentIndex={currentIndex}
-          maxIndex={moves.length - 1}
-          onChange={setCurrentIndex}
-        />
+    <div className="analysis-container">
+      <EvalBar evalScore={move.eval} />
+      <ChessboardView fen={move.fen} />
+
+      <div className="right-panel">
+        <ExplanationPanel explanation={move.explanation} />
+        <MoveList moves={MOVES} currentIndex={index} onSelect={setIndex} />
+        <PlaybackControls currentIndex={index} maxIndex={MOVES.length - 1} onChange={setIndex} />
       </div>
     </div>
   );

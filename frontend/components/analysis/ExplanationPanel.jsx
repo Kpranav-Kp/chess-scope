@@ -1,12 +1,12 @@
-export default function ExplanationPanel({ move }) {
-  if (!move.explanation) {
-    return <p style={{ fontStyle: "italic" }}>No explanation</p>;
-  }
+import Panel from "../ui/Panel";
 
+export default function ExplanationPanel({ explanation }) {
   return (
-    <div style={{ marginBottom: "12px" }}>
+    <Panel>
       <strong>Explanation</strong>
-      <p>{move.explanation}</p>
-    </div>
+      <p style={{ marginTop: "8px", color: "#ddd" }}>
+        {explanation || "No explanation available."}
+      </p>
+    </Panel>
   );
 }
