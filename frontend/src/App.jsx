@@ -1,12 +1,6 @@
-import './App.css'
+import "./App.css";
+import AnalysisPage from "../pages/AnalysisPage";
 
-function App() {
-
-  return (
-      <p>
-        ChessScope
-      </p>
-  )
+export default function App() {
+  return <AnalysisPage />;
 }
-
-export default App
