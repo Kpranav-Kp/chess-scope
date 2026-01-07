@@ -92,7 +92,10 @@ class GameSummaryView(APIView):
 class GameAnalysisView(APIView):
     def get(self, request, game_id):
         try:
-            game = Game.objects.get(id=game_id, user=request.user)
+            if request.user and request.user.is_authenticated:
+                game = Game.objects.get(id=game_id, user=request.user)
+            else:
+                game = Game.objects.get(id=game_id)
         except Game.DoesNotExist:
             return Response(
                 {"error": "Game not found"},
