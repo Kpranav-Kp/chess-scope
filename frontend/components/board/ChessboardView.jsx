@@ -31,8 +31,14 @@ export default function ChessboardView({ fen, uci, classification }) {
       <Chessboard
         position={fen}
         arePiecesDraggable={false}
-        animationDuration={0}
+        animationDuration={200}
         customSquareStyles={customSquareStyles}
+        customDarkSquareStyle={{ backgroundColor: "#779954" }}
+        customLightSquareStyle={{ backgroundColor: "#e9edcc" }}
+        customBoardStyle={{
+          borderRadius: "4px",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
+        }}
       />
     </div>
   );

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ChessboardView from "../components/board/ChessboardView";
 import MoveList from "../components/analysis/MoveList";
 import PlaybackControls from "../components/analysis/PlaybackControls";
 import ExplanationPanel from "../components/analysis/ExplanationPanel";
 import EvalBar from "../components/analysis/EvalBar";
+import AnalysisLoading from "../components/ui/AnalysisLoading";
+import { useAuth } from "../context/AuthContext";
 import "./AnalysisPage.css";
 
 function groupMoves(moves) {
@@ -24,48 +26,75 @@ function groupMoves(moves) {
 
 function getGameIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const q = params.get("game");
-  if (q && /^\d+$/.test(q)) return q;
-
-  const parts = window.location.pathname.split("/").filter(Boolean);
-  const last = parts[parts.length - 1];
-  if (last && /^\d+$/.test(last)) return last;
-
-  return "1";
+  return params.get("game");
 }
 
 export default function AnalysisPage() {
   const [plyIndex, setPlyIndex] = useState(0);
   const [moves, setMoves] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const { token } = useAuth();
+  const pollInterval = useRef(null);
 
   const groupedMoves = groupMoves(moves);
 
   useEffect(() => {
     const gameId = getGameIdFromUrl();
+    if (!gameId) {
+      setError("No game ID specified");
+      setLoading(false);
+      return;
+    }
 
-    fetch(`http://localhost:8000/api/${gameId}/analysis/`)
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setError(`Request failed (${res.status})`);
-          setMoves([]);
-        } else {
-          setMoves(data.moves || []);
+    const fetchAnalysis = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/api/${gameId}/analysis/`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (res.status === 202) {
+          setProcessing(true);
+          return; // Keep polling
         }
-        setPlyIndex(0);
+
+        if (!res.ok) {
+          if (res.status === 404) throw new Error("Game not found");
+          throw new Error(`Request failed (${res.status})`);
+        }
+
+        const data = await res.json();
+        setMoves(data.moves || []);
+        setProcessing(false);
         setLoading(false);
-      })
-      .catch((err) => {
+        if (pollInterval.current) {
+          clearInterval(pollInterval.current);
+          pollInterval.current = null;
+        }
+      } catch (err) {
         setError(err.message);
         setLoading(false);
-      });
-  }, []);
+        if (pollInterval.current) {
+          clearInterval(pollInterval.current);
+        }
+      }
+    };
 
-  if (loading) return <div style={{ color: "#aaa" }}>Loading analysis…</div>;
-  if (error) return <div style={{ color: "#f66" }}>Error loading analysis: {error}</div>;
-  if (!moves.length) return <div style={{ color: "#aaa" }}>No moves available</div>;
+    // Initial fetch
+    fetchAnalysis();
+
+    // Poll if processing
+    pollInterval.current = setInterval(fetchAnalysis, 2000);
+
+    return () => {
+      if (pollInterval.current) clearInterval(pollInterval.current);
+    }
+  }, [token]);
+
+  if (loading || processing) return <AnalysisLoading />;
+  if (error) return <div className="flex h-screen items-center justify-center text-red-500">{error}</div>;
+  if (!moves.length) return <div className="flex h-screen items-center justify-center text-gray-500">No moves available</div>;
 
   const currentMove = moves[plyIndex];
   const evalPawnUnits = (currentMove.evaluation ?? 0) / 100;

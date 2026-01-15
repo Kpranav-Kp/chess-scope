@@ -3,8 +3,8 @@
   gap: 32px;
   justify-content: center;
   align-items: flex-start;
-  padding: 64px 32px 32px;
-  min-height: 100vh;
+  padding: 0;
+  height: 100%;
 }
 
 .right-panel {
