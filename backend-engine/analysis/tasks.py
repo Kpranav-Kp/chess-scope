@@ -134,6 +134,7 @@ def analyze_game(self, game_id):
                 move_number=move["move_number"],
                 player=move["player"],
                 uci=move["uci"],
+                san=move["san"],
                 fen_before=fen_before,
                 fen_after=fen_after,
                 evaluation=eval_after,

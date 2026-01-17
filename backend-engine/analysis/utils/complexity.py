@@ -29,9 +29,9 @@ def select_engine_depth(phase: str, complexity: str) -> int:
         return 12
 
     if phase == "middlegame":
-        return 17 if complexity == "complex" else 15
+        return 20 if complexity == "complex" else 18
 
     if phase == "endgame":
-        return 18
+        return 22
 
-    return 15
+    return 20

@@ -29,12 +29,15 @@ export default function Sidebar({ onLogout }) {
               <li key={link.path}>
                 <Link
                   to={link.path}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-300 group ${isActive
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-300 group ${
+                    isActive
                       ? "bg-green-500/10 text-green-400 shadow-[inset_4px_0_0_-0px_#4ade80]"
                       : "text-gray-400 hover:bg-gray-900 hover:text-gray-100"
-                    }`}
+                  }`}
                 >
-                  <Icon className={`h-5 w-5 transition-colors ${isActive ? "text-green-400" : "group-hover:text-white"}`} />
+                  <Icon
+                    className={`h-5 w-5 transition-colors ${isActive ? "text-green-400" : "group-hover:text-white"}`}
+                  />
                   <span className="font-medium tracking-wide text-sm">{link.label}</span>
                 </Link>
               </li>

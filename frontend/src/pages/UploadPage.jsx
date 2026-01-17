@@ -12,13 +12,16 @@ export default function UploadPage() {
 
   const cleanPGN = (rawPgn) => {
     // 1. Split lines and trim
-    const lines = rawPgn.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+    const lines = rawPgn
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line);
 
     // 2. Separate headers and moves
     const headers = [];
     const moves = [];
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       if (line.startsWith("[") && line.endsWith("]")) {
         headers.push(line);
       } else {
@@ -43,9 +46,9 @@ export default function UploadPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ pgn: cleanedPgn })
+        body: JSON.stringify({ pgn: cleanedPgn }),
       });
 
       if (!response.ok) {
@@ -54,12 +57,13 @@ export default function UploadPage() {
 
       const data = await response.json();
       navigate(`/analysis?game=${data.game_id}`);
-    } catch (err) {
-      setError("Failed to start analysis. Please check your PGN.");
+    } catch (error) {
+      setError("Failed to upload game. Please try again.");
+      console.error(error);
     } finally {
       setIsUploading(false);
     }
-  }
+  };
 
   const handlePasteUpload = () => {
     if (pgn.trim()) {
@@ -78,7 +82,7 @@ export default function UploadPage() {
       }
     };
     reader.readAsText(file);
-  }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -130,10 +134,15 @@ export default function UploadPage() {
               )}
               <p className="mb-2 text-lg font-medium text-gray-300">Drag and drop your PGN file</p>
               <p className="text-sm text-gray-500">
-                or{" "}
-                <span className="text-green-500 hover:underline">browse files</span>
+                or <span className="text-green-500 hover:underline">browse files</span>
               </p>
-              <input type="file" className="hidden" accept=".pgn" onChange={handleFileUpload} disabled={isUploading} />
+              <input
+                type="file"
+                className="hidden"
+                accept=".pgn"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+              />
             </div>
           </label>
         </div>

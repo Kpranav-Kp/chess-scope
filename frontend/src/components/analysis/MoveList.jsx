@@ -37,7 +37,7 @@ export default function MoveList({ moves, currentPly, onSelect }) {
                     }}
                     onClick={() => row.whiteIndex !== null && onSelect(row.whiteIndex)}
                   >
-                    {row.white ? row.white.uci : ""}
+                    {row.white ? row.white.san || row.white.uci : ""}
                   </td>
 
                   <td
@@ -49,7 +49,7 @@ export default function MoveList({ moves, currentPly, onSelect }) {
                     }}
                     onClick={() => row.blackIndex !== null && onSelect(row.blackIndex)}
                   >
-                    {row.black ? row.black.uci : ""}
+                    {row.black ? row.black.san || row.black.uci : ""}
                   </td>
                 </tr>
               );

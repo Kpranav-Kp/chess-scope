@@ -101,6 +101,7 @@ class MoveAnalysisSerializer(serializers.ModelSerializer):
             "move_number",
             "player",
             "uci",
+            "san",
             "fen_before",
             "fen_after",
             "evaluation",

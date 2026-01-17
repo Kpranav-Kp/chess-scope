@@ -57,3 +57,4 @@ class Move(models.Model):
     centipawn_loss = models.FloatField(null=True)
     classification = models.CharField(max_length=20, null=True)
     accuracy_score = models.FloatField(null=True)
+    san = models.CharField(max_length=10, null=True)

@@ -14,6 +14,7 @@ def fen_from_pgn(pgn: str):
             "ply": board.ply(),
             "player": "White" if board.turn else "Black",
             "uci": move.uci(),
+            "san": board.san(move),
             "fen_before": fen,
         }
         board.push(move)

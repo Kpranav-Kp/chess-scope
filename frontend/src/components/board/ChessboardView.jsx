@@ -15,23 +15,24 @@ function uciToSquare(uci) {
 }
 
 export default function ChessboardView({ fen, uci, classification }) {
+  // console.log("ChessboardView FEN:", fen);
   const square = uciToSquare(uci);
 
   const customSquareStyles =
     square && classification
       ? {
-          [square]: {
-            backgroundColor: CLASS_COLORS[classification],
-          },
-        }
+        [square]: {
+          backgroundColor: CLASS_COLORS[classification],
+        },
+      }
       : {};
 
   return (
     <div style={{ width: "650px" }}>
       <Chessboard
         position={fen}
-        arePiecesDraggable={false}
-        animationDuration={200}
+        arePiecesDraggable={true}
+        animationDuration={300}
         customSquareStyles={customSquareStyles}
         customDarkSquareStyle={{ backgroundColor: "#779954" }}
         customLightSquareStyle={{ backgroundColor: "#e9edcc" }}
